@@ -1,4 +1,4 @@
-# qiskit-eigenlight
+# Qiskit Eigenlight
 
 **Turn a quantum system's eigenvalues into light instead of sound.**
 
