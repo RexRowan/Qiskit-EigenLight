@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qiskit-eigenlight"
+version = "0.1.0"
+description = "Render quantum state evolution and Cayley-graph spectra as an emission spectrum, not a soundtrack."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Rex Rowan" }]
+dependencies = [
+    "numpy>=1.22",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+stateviz = ["qiskit-stateviz"]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/RexRowan/qiskit-eigenlight"
+
+[tool.setuptools.packages.find]
+include = ["qiskit_eigenlight*"]
