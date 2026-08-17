@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Coherent Evolution Spectrum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#090C10;
+    --bg-panel:#11151D;
+    --bg-raised:#161B26;
+    --ink-hi:#ECE9E1;
+    --ink-mid:#9CA3AF;
+    --ink-low:#5B6472;
+    --hair:rgba(255,255,255,0.09);
+    --accent-violet:#7C5CFC;
+    --accent-gold:#F2B705;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg-void);color:var(--ink-hi);}
+  body{
+    font-family:'IBM Plex Sans',sans-serif;
+    padding:48px 20px 72px;
+    display:flex;
+    justify-content:center;
+  }
+  .wrap{width:100%;max-width:1080px;}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--accent-gold);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 14px 0;
+    line-height:1.1;
+    color:var(--ink-hi);
+  }
+  .lede{
+    font-size:15px;
+    line-height:1.6;
+    color:var(--ink-mid);
+    max-width:620px;
+    margin:0 0 36px 0;
+  }
+  .lede b{color:var(--ink-hi);font-weight:500;}
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--hair);
+    border-radius:10px;
+    padding:26px 28px 22px;
+    margin-bottom:22px;
+  }
+  .panel-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-low);
+    margin-bottom:16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .panel-label .val{color:var(--ink-mid); font-size:11px;}
+
+  /* Spectrum */
+  #specSvg{width:100%;height:220px;display:block;overflow:visible;}
+  .axis-line{stroke:var(--hair);stroke-width:1;}
+  .axis-tick{fill:var(--ink-low);font-family:'IBM Plex Mono',monospace;font-size:10px;}
+  .specline{stroke-linecap:round; transform-origin:center; transform-box:fill-box;}
+  .specglow{stroke-linecap:round; filter:blur(6px); opacity:0.75;}
+
+  @keyframes pulse{
+    0%,100%{opacity:0.55;}
+    50%{opacity:1;}
+  }
+
+  /* Controls */
+  .controls-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:26px;
+  }
+  @media (max-width:720px){ .controls-grid{grid-template-columns:1fr;} }
+
+  .field-row{margin-bottom:14px;}
+  .field-row label{
+    display:flex;
+    justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-mid);
+    margin-bottom:6px;
+  }
+  .field-row label .num{color:var(--ink-hi);}
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:3px;
+    background:var(--hair);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:13px;height:13px;border-radius:50%;
+    background:var(--accent-violet);
+    cursor:pointer;
+    box-shadow:0 0 8px rgba(124,92,252,0.7);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--accent-violet); border:none;
+    box-shadow:0 0 8px rgba(124,92,252,0.7);
+  }
+
+  .stepper{display:flex;align-items:center;gap:10px;}
+  .stepper button{
+    width:30px;height:30px;border-radius:6px;
+    border:1px solid var(--hair);
+    background:var(--bg-raised);
+    color:var(--ink-hi);
+    font-size:16px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .stepper button:hover{border-color:var(--accent-violet);}
+  .stepper .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    width:20px;
+    text-align:center;
+  }
+
+  .pills{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{
+    padding:7px 14px;
+    border-radius:20px;
+    border:1px solid var(--hair);
+    background:var(--bg-raised);
+    color:var(--ink-mid);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .pill.active{
+    color:var(--bg-void);
+    background:var(--accent-gold);
+    border-color:var(--accent-gold);
+    font-weight:600;
+  }
+
+  /* Population chart */
+  #popSvg{width:100%;height:170px;display:block;}
+  .poplegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
+  .chip{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-mid);}
+  .chip .sw{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  .note{
+    font-size:12.5px;
+    color:var(--ink-low);
+    line-height:1.6;
+    margin-top:6px;
+  }
+  .note code{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--ink-mid);
+    background:var(--bg-raised);
+    padding:1px 5px;
+    border-radius:4px;
+    font-size:11.5px;
+  }
+  .footer-note{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-low);
+    text-align:center;
+    margin-top:30px;
+    letter-spacing:0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">a continuous-time quantum walk, rendered as light</div>
+  <h1>Cay(ℤ<sub>n</sub>, S) Emission Spectrum</h1>
+  <p class="lede">A real Cayley graph, not a toy chain: pick a cyclic group ℤ<sub>n</sub> and a generating set S, and its adjacency matrix becomes the walk Hamiltonian for a continuous-time quantum walk. Every gap between eigenvalues of that graph is a frequency — this is the graph's spectrum, made visible.</p>
+
+  <div class="panel">
+    <div class="panel-label"><span>Emission spectrum — |c<sub>k</sub>c<sub>l</sub>⟨k|T|l⟩| at ω = |λ<sub>k</sub> − λ<sub>l</sub>|</span><span class="val" id="lineCountLabel"></span></div>
+    <svg id="specSvg" viewBox="0 0 1000 220" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label"><span>Group &amp; generators</span><span class="val" id="sysReadout"></span></div>
+    <div class="controls-grid">
+      <div>
+        <div class="field-row">
+          <label>Group order n (ℤ<sub>n</sub>) <span class="num" id="nLabel">8</span></label>
+          <div class="stepper">
+            <button id="nMinus">−</button>
+            <div class="count" id="nCount">8</div>
+            <button id="nPlus">+</button>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:18px;">
+          <label>Generating set S ⊂ ℤ<sub>n</sub></label>
+        </div>
+        <div class="pills" id="genPills"></div>
+      </div>
+      <div>
+        <div class="field-row">
+          <label>Walk starts at vertex <span class="num" id="startVal">0</span></label>
+          <input type="range" id="startSlider" min="0" max="7" step="1" value="0">
+        </div>
+        <p class="note" id="graphReadout" style="margin-top:20px;"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label"><span>Vertex occupation — |ψ<sub>i</sub>(t)|²</span><span class="val" id="tmaxLabel"></span></div>
+    <svg id="popSvg" viewBox="0 0 1000 170" preserveAspectRatio="none"></svg>
+    <div class="poplegend" id="popLegend"></div>
+    <p class="note">This is exactly a continuous-time quantum walk on Cay(ℤ<sub>n</sub>, S): H is the graph's adjacency matrix, and |ψ<sub>i</sub>(t)|² is the same mixing signature used in <code>WalkBasedLayout</code>. No dissipation, so the spectral lines above stay perfectly sharp. Transition strengths use a uniform coupling between every vertex pair — a simplification for the picture, not derived from the graph edges themselves.</p>
+  </div>
+
+  <div class="footer-note">H = adjacency matrix of Cay(ℤ<sub>n</sub>, S) · diagonalized in-browser via Jacobi rotation · ħ = 1</div>
+</div>
+
+<script>
+// ---------- linear algebra: Jacobi eigenvalue solver for real symmetric matrices ----------
+function jacobiEigen(Ain, maxSweeps=120, tol=1e-12){
+  const n = Ain.length;
+  const A = Ain.map(r=>r.slice());
+  const V = Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  for(let sweep=0; sweep<maxSweeps; sweep++){
+    let off = 0;
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) off += A[i][j]*A[i][j];
+    if(off < tol) break;
+    for(let p=0;p<n;p++){
+      for(let q=p+1;q<n;q++){
+        if(Math.abs(A[p][q]) < 1e-15) continue;
+        const theta = (A[q][q]-A[p][p])/(2*A[p][q]);
+        const sign = theta >= 0 ? 1 : -1;
+        const t = sign/(Math.abs(theta)+Math.sqrt(theta*theta+1));
+        const c = 1/Math.sqrt(t*t+1);
+        const s = t*c;
+        const app=A[p][p], aqq=A[q][q], apq=A[p][q];
+        A[p][p] = c*c*app - 2*s*c*apq + s*s*aqq;
+        A[q][q] = s*s*app + 2*s*c*apq + c*c*aqq;
+        A[p][q] = 0; A[q][p]=0;
+        for(let k=0;k<n;k++){
+          if(k!==p && k!==q){
+            const akp = A[k][p], akq = A[k][q];
+            A[k][p] = c*akp - s*akq; A[p][k]=A[k][p];
+            A[k][q] = s*akp + c*akq; A[q][k]=A[k][q];
+          }
+        }
+        for(let k=0;k<n;k++){
+          const vkp = V[k][p], vkq = V[k][q];
+          V[k][p] = c*vkp - s*vkq;
+          V[k][q] = s*vkp + c*vkq;
+        }
+      }
+    }
+  }
+  const eigenvalues = A.map((row,i)=>row[i]);
+  const idx = eigenvalues.map((v,i)=>i).sort((a,b)=>eigenvalues[a]-eigenvalues[b]);
+  const sortedVals = idx.map(i=>eigenvalues[i]);
+  const sortedVecs = Array.from({length:n},()=>Array(n).fill(0));
+  for(let col=0; col<n; col++){
+    const origCol = idx[col];
+    for(let row=0; row<n; row++) sortedVecs[row][col] = V[row][origCol];
+  }
+  return {values: sortedVals, vectors: sortedVecs};
+}
+
+// ---------- color mapping (custom "quantum spectrum" gradient) ----------
+const stops = [
+  [0.00, [109,74,255]],
+  [0.25, [59,130,246]],
+  [0.50, [34,211,238]],
+  [0.70, [52,211,153]],
+  [0.85, [251,191,36]],
+  [1.00, [244,63,94]]
+];
+function freqToColor(t){
+  t = Math.max(0, Math.min(1,t));
+  for(let i=0;i<stops.length-1;i++){
+    const [t0,c0]=stops[i], [t1,c1]=stops[i+1];
+    if(t>=t0 && t<=t1){
+      const f = (t-t0)/(t1-t0 || 1);
+      const r = Math.round(c0[0]+(c1[0]-c0[0])*f);
+      const g = Math.round(c0[1]+(c1[1]-c0[1])*f);
+      const b = Math.round(c0[2]+(c1[2]-c0[2])*f);
+      return `rgb(${r},${g},${b})`;
+    }
+  }
+  return 'rgb(244,63,94)';
+}
+const siteColors = ['#8B8FEA','#63C7B2','#E0A458','#D9647C','#6FB1E0'];
+
+// ---------- state ----------
+let N = 8;                    // group order n, Z_n
+let S = new Set([1,2]);       // generating set
+let startVertex = 0;
+
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs){
+  const e = document.createElementNS(svgNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+function gcdMany(vals, n){
+  let g = n;
+  vals.forEach(v=>{ let a=g,b=v; while(b){[a,b]=[b,a%b];} g=a; });
+  return g;
+}
+
+function buildControlSliders(){
+  document.getElementById('nCount').textContent = N;
+  document.getElementById('nLabel').textContent = N;
+
+  // keep only valid generators for current n
+  const maxS = Math.floor(N/2);
+  S = new Set([...S].filter(s=>s>=1 && s<=maxS));
+  if(S.size===0) S.add(1);
+
+  const pillWrap = document.getElementById('genPills');
+  pillWrap.innerHTML='';
+  for(let s=1;s<=maxS;s++){
+    const p = document.createElement('div');
+    p.className = 'pill' + (S.has(s) ? ' active' : '');
+    p.textContent = 's=' + s;
+    p.addEventListener('click', ()=>{
+      if(S.has(s)){ if(S.size>1) S.delete(s); }
+      else S.add(s);
+      buildControlSliders(); recompute();
+    });
+    pillWrap.appendChild(p);
+  }
+
+  const slider = document.getElementById('startSlider');
+  slider.max = N-1;
+  if(startVertex>N-1) startVertex = N-1;
+  slider.value = startVertex;
+  document.getElementById('startVal').textContent = startVertex;
+  slider.oninput = ()=>{ startVertex = parseInt(slider.value); document.getElementById('startVal').textContent = startVertex; recompute(); };
+}
+
+function buildAdjacency(){
+  const A = Array.from({length:N},()=>Array(N).fill(0));
+  S.forEach(s=>{
+    for(let i=0;i<N;i++){
+      const j1 = (i+s)%N;
+      const j2 = ((i-s)%N+N)%N;
+      A[i][j1]=1; A[j1][i]=1;
+      A[i][j2]=1; A[j2][i]=1;
+    }
+  });
+  for(let i=0;i<N;i++) A[i][i]=0;
+  return A;
+}
+
+function computeGirth(A){
+  let best = Infinity;
+  for(let s=0;s<N;s++){
+    const dist = Array(N).fill(-1);
+    const parent = Array(N).fill(-1);
+    dist[s]=0;
+    const queue=[s];
+    let qi=0;
+    while(qi<queue.length){
+      const u = queue[qi++];
+      for(let v=0; v<N; v++){
+        if(A[u][v]===0) continue;
+        if(dist[v]===-1){
+          dist[v]=dist[u]+1;
+          parent[v]=u;
+          queue.push(v);
+        } else if(v!==parent[u]){
+          const cyc = dist[u]+dist[v]+1;
+          if(cyc<best) best=cyc;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function matMul(A,B){
+  const n=A.length, m=B[0].length, k=B.length;
+  const C = Array.from({length:n},()=>Array(m).fill(0));
+  for(let i=0;i<n;i++) for(let j=0;j<m;j++){
+    let s=0; for(let l=0;l<k;l++) s+=A[i][l]*B[l][j];
+    C[i][j]=s;
+  }
+  return C;
+}
+function transpose(A){
+  return A[0].map((_,j)=>A.map(row=>row[j]));
+}
+
+function recompute(){
+  const A = buildAdjacency();
+  const {values: Evals, vectors: Vecs} = jacobiEigen(A);
+
+  const girth = computeGirth(A);
+  const gap = Evals[N-1] - Evals[N-2];
+  const degree = [...S].reduce((acc,s)=> acc + (2*s%N===0 ? 1 : 2), 0);
+  document.getElementById('graphReadout').innerHTML =
+    `degree ${degree} · girth ${isFinite(girth)?girth:'∞'} · spectral gap ${gap.toFixed(3)}`;
+
+  // transition operator: uniform off-diagonal coupling (probes the eigenbasis coherence structure)
+  const T = Array.from({length:N},(_,i)=>Array.from({length:N},(_,j)=> i===j?0:1));
+  const Vt = transpose(Vecs);
+  const B = matMul(matMul(Vt, T), Vecs);
+
+  // c_k = component of initial localized state (at startVertex) in eigenbasis
+  const c = Vecs[startVertex];
+
+  // spectral lines
+  const lines = [];
+  for(let k=0;k<N;k++){
+    for(let l=k+1;l<N;l++){
+      const freq = Math.abs(Evals[l]-Evals[k]);
+      const amp = 2*Math.abs(c[k]*c[l]*B[k][l]);
+      lines.push({k,l,freq,amp});
+    }
+  }
+  const maxAmp = Math.max(...lines.map(x=>x.amp), 1e-9);
+  lines.forEach(x=> x.norm = x.amp/maxAmp);
+  const maxFreq = Math.max(...lines.map(x=>x.freq), 1e-6);
+
+  drawSpectrum(lines, maxFreq);
+
+  // population dynamics
+  let minGap = Infinity;
+  for(let k=0;k<N;k++) for(let l=k+1;l<N;l++){
+    const g = Math.abs(Evals[l]-Evals[k]);
+    if(g>1e-6 && g<minGap) minGap=g;
+  }
+  if(!isFinite(minGap)) minGap = 1;
+  let Tmax = (2*Math.PI/minGap)*3;
+  Tmax = Math.max(5, Math.min(60, Tmax));
+
+  const steps = 220;
+  const series = Array.from({length:N},()=>[]);
+  for(let s=0;s<=steps;s++){
+    const t = Tmax*s/steps;
+    for(let i=0;i<N;i++){
+      let re=0, im=0;
+      for(let k=0;k<N;k++){
+        const w = Vecs[i][k]*c[k];
+        re += w*Math.cos(Evals[k]*t);
+        im += -w*Math.sin(Evals[k]*t);
+      }
+      series[i].push(re*re+im*im);
+    }
+  }
+  drawPopulations(series, Tmax);
+
+  document.getElementById('lineCountLabel').textContent = lines.length + ' transitions';
+  document.getElementById('sysReadout').textContent = `Z${N}, S={${[...S].sort((a,b)=>a-b).join(',')}}`;
+  document.getElementById('tmaxLabel').textContent = 'window: 0 → ' + Tmax.toFixed(1);
+}
+
+function clearSvg(svg){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+function drawSpectrum(lines, maxFreq){
+  const svg = document.getElementById('specSvg');
+  clearSvg(svg);
+  const W=1000, H=220, padL=40, padR=40, baseY=170, topY=26;
+  svg.appendChild(el('line',{class:'axis-line', x1:padL, y1:baseY, x2:W-padR, y2:baseY}));
+
+  const ticks = 5;
+  for(let i=0;i<=ticks;i++){
+    const f = maxFreq*1.12*i/ticks;
+    const x = padL + (W-padL-padR)*(f/(maxFreq*1.12));
+    svg.appendChild(el('line',{class:'axis-line', x1:x, y1:baseY, x2:x, y2:baseY+5}));
+    const t = el('text',{class:'axis-tick', x:x, y:baseY+18, 'text-anchor':'middle'});
+    t.textContent = f.toFixed(1);
+    svg.appendChild(t);
+  }
+  const label = el('text',{class:'axis-tick', x:(W)/2, y:baseY+34, 'text-anchor':'middle'});
+  label.textContent = 'ω  (energy units, ħ = 1)';
+  svg.appendChild(label);
+
+  lines.forEach(ln=>{
+    const xf = ln.freq/(maxFreq*1.12);
+    const x = padL + (W-padL-padR)*xf;
+    const h = 8 + ln.norm*(baseY-topY-8);
+    const y1 = baseY, y2 = baseY-h;
+    const color = freqToColor(ln.freq/maxFreq);
+    const dur = (0.9 + (1-ln.norm)*0.4) / (0.4+xf*1.6);
+
+    const glow = el('line',{class:'specglow', x1:x,y1,x2:x,y2, stroke:color, 'stroke-width': 3+ln.norm*4});
+    glow.style.animation = `pulse ${dur.toFixed(2)}s ease-in-out infinite`;
+    svg.appendChild(glow);
+
+    const line = el('line',{class:'specline', x1:x,y1,x2:x,y2, stroke:color, 'stroke-width': 1.6+ln.norm*2.2});
+    const title = el('title',{});
+    title.textContent = `${ln.k} → ${ln.l}   ω = ${ln.freq.toFixed(3)}   intensity = ${ln.norm.toFixed(2)}`;
+    line.appendChild(title);
+    svg.appendChild(line);
+  });
+}
+
+function drawPopulations(series, Tmax){
+  const svg = document.getElementById('popSvg');
+  clearSvg(svg);
+  const W=1000,H=170, padL=34, padR=14, top=14, bottom=30;
+  const plotH = H-top-bottom, plotW = W-padL-padR;
+  svg.appendChild(el('line',{class:'axis-line', x1:padL,y1:H-bottom,x2:W-padR,y2:H-bottom}));
+  svg.appendChild(el('line',{class:'axis-line', x1:padL,y1:top,x2:padL,y2:H-bottom}));
+
+  const steps = series[0].length-1;
+  series.forEach((s, i)=>{
+    let d = '';
+    s.forEach((v, idx)=>{
+      const x = padL + plotW*idx/steps;
+      const y = (H-bottom) - v*plotH;
+      d += (idx===0 ? 'M' : 'L') + x.toFixed(2) + ' ' + y.toFixed(2) + ' ';
+    });
+    const path = el('path',{d, fill:'none', stroke: siteColors[i%siteColors.length], 'stroke-width':1.8, 'stroke-opacity':0.9});
+    svg.appendChild(path);
+  });
+
+  [0, Tmax/2, Tmax].forEach((tv, i)=>{
+    const x = padL + plotW*i/2;
+    const t = el('text',{class:'axis-tick', x:x, y:H-10, 'text-anchor': i===0?'start':(i===2?'end':'middle')});
+    t.textContent = 't = '+tv.toFixed(1);
+    svg.appendChild(t);
+  });
+
+  const legend = document.getElementById('popLegend');
+  legend.innerHTML='';
+  for(let i=0;i<series.length;i++){
+    const c = document.createElement('div'); c.className='chip';
+    c.innerHTML = `<span class="sw" style="background:${siteColors[i%siteColors.length]}"></span> vertex ${i}`;
+    legend.appendChild(c);
+  }
+}
+
+document.getElementById('nMinus').addEventListener('click', ()=>{ if(N>4){ N--; buildControlSliders(); recompute(); }});
+document.getElementById('nPlus').addEventListener('click', ()=>{ if(N<16){ N++; buildControlSliders(); recompute(); }});
+
+buildControlSliders();
+recompute();
+</script>
+</body>
+</html>
