@@ -6,6 +6,9 @@ There's a well-worn idea in the ecosystem of sonifying quantum state evolution â
 
 It is not a music-to-image converter. There is no audio anywhere in this package. The physics is the same substrate a sonification would use â€” this is just the other rendering of it.
 
+![1](1.png)
+![2](2.png)
+
 ## What it actually computes
 
 Given a Hamiltonian `H` (real symmetric, e.g. the adjacency matrix of a graph) and an initial state:
